@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: movies
+    description: Movie search via TMDB
 paths:
   /healthz:
     get:
@@ -24,6 +26,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /movies/search:
+    get:
+      operationId: searchMovies
+      tags: [movies]
+      summary: Search movies on TMDB
+      description: Search the TMDB database for movies matching a query string. Returns titles in Brazilian Portuguese when available, plus the original title.
+      parameters:
+        - in: query
+          name: q
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Movie title to search for
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MovieSearchResult"
+        "400":
+          description: Invalid query
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream TMDB error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +70,38 @@ components:
           type: string
       required:
         - status
-
+    MovieSearchResult:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+          description: TMDB unique movie id
+        titlePtBr:
+          type: string
+          description: Title in Brazilian Portuguese (falls back to original title when no translation exists)
+        originalTitle:
+          type: string
+          description: Original title in the movie's source language
+        year:
+          type: ["integer", "null"]
+          description: Release year
+        rating:
+          type: ["number", "null"]
+          description: TMDB average vote (0-10)
+        posterUrl:
+          type: ["string", "null"]
+          description: Full URL to the movie poster image
+      required:
+        - tmdbId
+        - titlePtBr
+        - originalTitle
+        - year
+        - rating
+        - posterUrl
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error

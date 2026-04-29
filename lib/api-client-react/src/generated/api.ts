@@ -13,7 +13,12 @@ import type {
   UseQueryResult,
 } from "@tanstack/react-query";
 
-import type { HealthStatus } from "./api.schemas";
+import type {
+  ErrorResponse,
+  HealthStatus,
+  MovieSearchResult,
+  SearchMoviesParams,
+} from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
 import type { ErrorType } from "../custom-fetch";
@@ -92,6 +97,101 @@ export function useHealthCheck<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getHealthCheckQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * Search the TMDB database for movies matching a query string. Returns titles in Brazilian Portuguese when available, plus the original title.
+ * @summary Search movies on TMDB
+ */
+export const getSearchMoviesUrl = (params: SearchMoviesParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/movies/search?${stringifiedParams}`
+    : `/api/movies/search`;
+};
+
+export const searchMovies = async (
+  params: SearchMoviesParams,
+  options?: RequestInit,
+): Promise<MovieSearchResult[]> => {
+  return customFetch<MovieSearchResult[]>(getSearchMoviesUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchMoviesQueryKey = (params?: SearchMoviesParams) => {
+  return [`/api/movies/search`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchMoviesQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchMovies>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params: SearchMoviesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchMovies>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSearchMoviesQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchMovies>>> = ({
+    signal,
+  }) => searchMovies(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchMovies>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchMoviesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchMovies>>
+>;
+export type SearchMoviesQueryError = ErrorType<ErrorResponse>;
+
+/**
+ * @summary Search movies on TMDB
+ */
+
+export function useSearchMovies<
+  TData = Awaited<ReturnType<typeof searchMovies>>,
+  TError = ErrorType<ErrorResponse>,
+>(
+  params: SearchMoviesParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchMovies>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchMoviesQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

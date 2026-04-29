@@ -1,59 +1,66 @@
 /**
- * Semantic design tokens for the mobile app.
- *
- * These tokens mirror the naming conventions used in web artifacts (index.css)
- * so that multi-artifact projects share a cohesive visual identity.
- *
- * Replace the placeholder values below with values that match the project's
- * brand. If a sibling web artifact exists, read its index.css and convert the
- * HSL values to hex so both artifacts use the same palette.
- *
- * To add dark mode, add a `dark` key with the same token names.
- * The useColors() hook will automatically pick it up.
+ * Cinema-inspired palette for the movie tracker.
+ * Dark UI with warm gold accents reminiscent of a movie theatre.
  */
 
-const colors = {
+const palette = {
   light: {
-    // Legacy aliases (kept for backward compatibility)
-    text: "#0a0a0a",
-    tint: "#2f95dc",
+    text: "#1a1410",
+    tint: "#c8a155",
 
-    // Core surfaces
-    background: "#ffffff",
-    foreground: "#0a0a0a",
+    background: "#fbf7f1",
+    foreground: "#1a1410",
 
-    // Cards / elevated surfaces
-    card: "#f9f9f9",
-    cardForeground: "#0a0a0a",
+    card: "#ffffff",
+    cardForeground: "#1a1410",
 
-    // Primary action color (buttons, links, active states)
-    primary: "#2f95dc",
+    primary: "#b8862f",
     primaryForeground: "#ffffff",
 
-    // Secondary / less-emphasis interactive surfaces
-    secondary: "#f0f0f0",
-    secondaryForeground: "#1a1a1a",
+    secondary: "#efe6d6",
+    secondaryForeground: "#3d2f1c",
 
-    // Muted / subdued elements (dividers, timestamps, placeholders)
-    muted: "#f0f0f0",
-    mutedForeground: "#737373",
+    muted: "#f0e8d8",
+    mutedForeground: "#7a6a52",
 
-    // Accent highlights (badges, selected items, focus rings)
-    accent: "#f0f0f0",
-    accentForeground: "#1a1a1a",
+    accent: "#f3e7c9",
+    accentForeground: "#3d2f1c",
 
-    // Destructive actions (delete, error states)
-    destructive: "#ef4444",
+    destructive: "#c0392b",
     destructiveForeground: "#ffffff",
 
-    // Borders and input outlines
-    border: "#e5e5e5",
-    input: "#e5e5e5",
+    border: "#e6dcc7",
+    input: "#e6dcc7",
   },
+  dark: {
+    text: "#f5ecd7",
+    tint: "#e7c267",
 
-  // Border radius (in px). Sync from the sibling web artifact's --radius
-  // CSS variable. This value applies to cards, buttons, inputs, and modals.
-  radius: 8,
+    background: "#0e0c0a",
+    foreground: "#f5ecd7",
+
+    card: "#1a1612",
+    cardForeground: "#f5ecd7",
+
+    primary: "#e7c267",
+    primaryForeground: "#1a1410",
+
+    secondary: "#241e17",
+    secondaryForeground: "#f5ecd7",
+
+    muted: "#1f1a14",
+    mutedForeground: "#a89776",
+
+    accent: "#2c241a",
+    accentForeground: "#f5ecd7",
+
+    destructive: "#e74c3c",
+    destructiveForeground: "#ffffff",
+
+    border: "#2a221a",
+    input: "#2a221a",
+  },
+  radius: 12,
 };
 
-export default colors;
+export default palette;

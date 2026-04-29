@@ -9,16 +9,20 @@ import { Platform, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
-// IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
-// NativeTabs intentionally does NOT use custom design tokens — liquid glass
-// is a system-level appearance provided by iOS and cannot be overridden.
-// Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
 function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "house", selected: "house.fill" }} />
-        <Label>Home</Label>
+        <Icon sf={{ default: "bookmark", selected: "bookmark.fill" }} />
+        <Label>Quero Ver</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="watched">
+        <Icon sf={{ default: "checkmark.circle", selected: "checkmark.circle.fill" }} />
+        <Label>Já Vi</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="abandoned">
+        <Icon sf={{ default: "xmark.circle", selected: "xmark.circle.fill" }} />
+        <Label>Desisti</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -36,11 +40,18 @@ function ClassicTabLayout() {
       screenOptions={{
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
+        tabBarLabelStyle: { fontFamily: "Inter_500Medium", fontSize: 11 },
         headerShown: true,
+        headerStyle: { backgroundColor: colors.background },
+        headerTitleStyle: {
+          color: colors.foreground,
+          fontFamily: "Inter_700Bold",
+        },
+        headerShadowVisible: false,
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.background,
-          borderTopWidth: isWeb ? 1 : 0,
+          borderTopWidth: isWeb ? 1 : StyleSheet.hairlineWidth,
           borderTopColor: colors.border,
           elevation: 0,
           ...(isWeb ? { height: 84 } : {}),
@@ -65,12 +76,36 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: "Home",
+          title: "Quero Ver",
           tabBarIcon: ({ color }) =>
             isIOS ? (
-              <SymbolView name="house" tintColor={color} size={24} />
+              <SymbolView name="bookmark" tintColor={color} size={24} />
             ) : (
-              <Feather name="home" size={22} color={color} />
+              <Feather name="bookmark" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="watched"
+        options={{
+          title: "Já Vi",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="checkmark.circle" tintColor={color} size={24} />
+            ) : (
+              <Feather name="check-circle" size={22} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="abandoned"
+        options={{
+          title: "Desisti",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="xmark.circle" tintColor={color} size={24} />
+            ) : (
+              <Feather name="x-circle" size={22} color={color} />
             ),
         }}
       />

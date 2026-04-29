@@ -14,3 +14,31 @@ import * as zod from "zod";
 export const HealthCheckResponse = zod.object({
   status: zod.string(),
 });
+
+/**
+ * Search the TMDB database for movies matching a query string. Returns titles in Brazilian Portuguese when available, plus the original title.
+ * @summary Search movies on TMDB
+ */
+
+export const SearchMoviesQueryParams = zod.object({
+  q: zod.coerce.string().min(1).describe("Movie title to search for"),
+});
+
+export const SearchMoviesResponseItem = zod.object({
+  tmdbId: zod.number().describe("TMDB unique movie id"),
+  titlePtBr: zod
+    .string()
+    .describe(
+      "Title in Brazilian Portuguese (falls back to original title when no translation exists)",
+    ),
+  originalTitle: zod
+    .string()
+    .describe("Original title in the movie's source language"),
+  year: zod.number().nullable().describe("Release year"),
+  rating: zod.number().nullable().describe("TMDB average vote (0-10)"),
+  posterUrl: zod
+    .string()
+    .nullable()
+    .describe("Full URL to the movie poster image"),
+});
+export const SearchMoviesResponse = zod.array(SearchMoviesResponseItem);

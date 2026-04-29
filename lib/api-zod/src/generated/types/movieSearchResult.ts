@@ -5,9 +5,6 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-export interface HealthStatus {
-  status: string;
-}
 
 export interface MovieSearchResult {
   /** TMDB unique movie id */
@@ -32,15 +29,3 @@ export interface MovieSearchResult {
    */
   posterUrl: string | null;
 }
-
-export interface ErrorResponse {
-  error: string;
-}
-
-export type SearchMoviesParams = {
-  /**
-   * Movie title to search for
-   * @minLength 1
-   */
-  q: string;
-};

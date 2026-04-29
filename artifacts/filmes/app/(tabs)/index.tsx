@@ -1,28 +1,12 @@
-import { StyleSheet, Text, View } from "react-native";
+import React from "react";
 
-export default function TabOneScreen() {
+import { MovieList } from "@/components/MovieList";
+
+export default function WantToWatchScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Replit Agent is building...</Text>
-      <Text style={styles.text}>Your app will appear here once it's ready.</Text>
-    </View>
+    <MovieList
+      status="want"
+      emptyMessage="Toque no botão + para adicionar filmes que você quer assistir."
+    />
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: "bold",
-  },
-  text: {
-    fontSize: 16,
-    textAlign: "center",
-    paddingHorizontal: 20,
-  },
-});
