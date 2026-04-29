@@ -21,14 +21,9 @@ import {
   useSearchMovies,
 } from "@workspace/api-client-react";
 
+import { AddMovieSheet, type AddMovieDraft } from "@/components/AddMovieSheet";
 import { MovieStatus, useMovies } from "@/contexts/MoviesContext";
 import { useColors } from "@/hooks/useColors";
-
-const STATUS_OPTIONS: { value: MovieStatus; label: string; icon: keyof typeof Feather.glyphMap }[] = [
-  { value: "want", label: "Quero Ver", icon: "bookmark" },
-  { value: "watched", label: "Já Vi", icon: "check-circle" },
-  { value: "abandoned", label: "Desisti", icon: "x-circle" },
-];
 
 function useDebounced<T>(value: T, delay = 400): T {
   const [debounced, setDebounced] = useState(value);
@@ -47,6 +42,7 @@ export default function AddMovieScreen() {
 
   const [query, setQuery] = useState("");
   const [manualMode, setManualMode] = useState(false);
+  const [pendingMovie, setPendingMovie] = useState<AddMovieDraft | null>(null);
 
   const debouncedQuery = useDebounced(query.trim(), 400);
 
@@ -70,22 +66,16 @@ export default function AddMovieScreen() {
     return "Erro ao buscar filmes.";
   }, [isError, error]);
 
-  const promptStatusAndAdd = (movie: Omit<Parameters<typeof addMovie>[0], "status">) => {
-    Alert.alert(
-      "Onde adicionar?",
-      movie.titlePtBr,
-      [
-        ...STATUS_OPTIONS.map((opt) => ({
-          text: opt.label,
-          onPress: async () => {
-            await addMovie({ ...movie, status: opt.value });
-            router.back();
-          },
-        })),
-        { text: "Cancelar", style: "cancel" as const },
-      ],
-      { cancelable: true },
-    );
+  const promptStatusAndAdd = (movie: AddMovieDraft) => {
+    setPendingMovie(movie);
+  };
+
+  const handlePickStatus = async (status: MovieStatus) => {
+    if (!pendingMovie) return;
+    const movie = pendingMovie;
+    setPendingMovie(null);
+    await addMovie({ ...movie, status });
+    router.back();
   };
 
   const onPickResult = (result: MovieSearchResult) => {
@@ -243,6 +233,11 @@ export default function AddMovieScreen() {
           />
         </>
       )}
+      <AddMovieSheet
+        movie={pendingMovie}
+        onClose={() => setPendingMovie(null)}
+        onPick={handlePickStatus}
+      />
     </View>
   );
 }
