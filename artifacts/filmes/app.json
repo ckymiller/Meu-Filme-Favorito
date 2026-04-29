@@ -1,11 +1,11 @@
 {
   "expo": {
     "name": "Meus Filmes",
-    "slug": "filmes",
+    "slug": "meusfilmes",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "filmes",
+    "scheme": "meusfilmes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -14,11 +14,14 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.meusfilmes.app"
     },
-    "android": {},
+    "android": {
+      "package": "com.meusfilmes.app"
+    },
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       [
