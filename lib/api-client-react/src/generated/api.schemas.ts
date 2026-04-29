@@ -10,37 +10,152 @@ export interface HealthStatus {
 }
 
 export interface MovieSearchResult {
-  /** TMDB unique movie id */
   tmdbId: number;
-  /** Title in Brazilian Portuguese (falls back to original title when no translation exists) */
   titlePtBr: string;
-  /** Original title in the movie's source language */
   originalTitle: string;
-  /**
-   * Release year
-   * @nullable
-   */
+  /** @nullable */
   year: number | null;
-  /**
-   * TMDB average vote (0-10)
-   * @nullable
-   */
+  /** @nullable */
   rating: number | null;
+  /** @nullable */
+  posterUrl: string | null;
+}
+
+export interface MovieDetail {
+  tmdbId: number;
+  titlePtBr: string;
+  originalTitle: string;
+  /** @nullable */
+  year: number | null;
+  /** @nullable */
+  rating: number | null;
+  /** @nullable */
+  posterUrl: string | null;
+  /** @nullable */
+  backdropUrl: string | null;
   /**
-   * Full URL to the movie poster image
+   * Synopsis in Brazilian Portuguese (with English fallback)
    * @nullable
    */
-  posterUrl: string | null;
+  overview: string | null;
+  /** @nullable */
+  runtime: number | null;
+  genres: string[];
+  /** @nullable */
+  tagline: string | null;
 }
 
 export interface ErrorResponse {
   error: string;
 }
 
+export interface AuthUser {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** @nullable */
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
+}
+
+export interface AuthUserEnvelope {
+  user: AuthUser | null;
+}
+
+export interface MobileTokenExchangeRequest {
+  /** @minLength 1 */
+  code: string;
+  /** @minLength 1 */
+  code_verifier: string;
+  /** @minLength 1 */
+  redirect_uri: string;
+  /** @minLength 1 */
+  state: string;
+  /** @minLength 1 */
+  nonce?: string;
+}
+
+export interface MobileTokenExchangeSuccess {
+  token: string;
+}
+
+export const LogoutSuccessValue = {
+  success: true,
+} as const;
+export type LogoutSuccess = typeof LogoutSuccessValue;
+
+export interface ErrorEnvelope {
+  error: string;
+}
+
+export type MovieStatus = (typeof MovieStatus)[keyof typeof MovieStatus];
+
+export const MovieStatus = {
+  want: "want",
+  watched: "watched",
+  abandoned: "abandoned",
+} as const;
+
+export interface UserMovie {
+  id: string;
+  /** @nullable */
+  tmdbId: number | null;
+  titlePtBr: string;
+  originalTitle: string;
+  /** @nullable */
+  year: number | null;
+  /** @nullable */
+  rating: number | null;
+  /** @nullable */
+  posterUrl: string | null;
+  status: MovieStatus;
+  addedAt: string;
+}
+
+export interface AddUserMovieRequest {
+  /** @nullable */
+  tmdbId?: number | null;
+  /** @minLength 1 */
+  titlePtBr: string;
+  originalTitle: string;
+  /** @nullable */
+  year?: number | null;
+  /** @nullable */
+  rating?: number | null;
+  /** @nullable */
+  posterUrl?: string | null;
+  status: MovieStatus;
+}
+
+export interface UpdateUserMovieRequest {
+  status: MovieStatus;
+}
+
+export interface BulkUpsertRequest {
+  movies: AddUserMovieRequest[];
+}
+
+/**
+ * Opaque session token — `Bearer <sid>`.
+ */
+export type AuthorizationSessionHeaderParameter = string;
+
 export type SearchMoviesParams = {
   /**
-   * Movie title to search for
    * @minLength 1
    */
   q: string;
+};
+
+export type BeginBrowserLoginParams = {
+  returnTo?: string;
+};
+
+export type HandleBrowserLoginCallbackParams = {
+  code?: string;
+  state?: string;
+  iss?: string;
 };

@@ -6,7 +6,22 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from "./addUserMovieRequest";
+export * from "./authorizationSessionHeaderParameter";
+export * from "./authUser";
+export * from "./authUserEnvelope";
+export * from "./beginBrowserLoginParams";
+export * from "./bulkUpsertRequest";
+export * from "./errorEnvelope";
 export * from "./errorResponse";
+export * from "./handleBrowserLoginCallbackParams";
 export * from "./healthStatus";
+export * from "./logoutSuccess";
+export * from "./mobileTokenExchangeRequest";
+export * from "./mobileTokenExchangeSuccess";
+export * from "./movieDetail";
 export * from "./movieSearchResult";
+export * from "./movieStatus";
 export * from "./searchMoviesParams";
+export * from "./updateUserMovieRequest";
+export * from "./userMovie";

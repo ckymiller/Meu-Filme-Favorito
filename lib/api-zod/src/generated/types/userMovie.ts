@@ -5,9 +5,12 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MovieStatus } from "./movieStatus";
 
-export interface MovieSearchResult {
-  tmdbId: number;
+export interface UserMovie {
+  id: string;
+  /** @nullable */
+  tmdbId: number | null;
   titlePtBr: string;
   originalTitle: string;
   /** @nullable */
@@ -16,4 +19,6 @@ export interface MovieSearchResult {
   rating: number | null;
   /** @nullable */
   posterUrl: string | null;
+  status: MovieStatus;
+  addedAt: Date;
 }

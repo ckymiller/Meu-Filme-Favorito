@@ -8,7 +8,6 @@
 import * as zod from "zod";
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -16,29 +15,264 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * Search the TMDB database for movies matching a query string. Returns titles in Brazilian Portuguese when available, plus the original title.
  * @summary Search movies on TMDB
  */
 
 export const SearchMoviesQueryParams = zod.object({
-  q: zod.coerce.string().min(1).describe("Movie title to search for"),
+  q: zod.coerce.string().min(1),
 });
 
 export const SearchMoviesResponseItem = zod.object({
-  tmdbId: zod.number().describe("TMDB unique movie id"),
-  titlePtBr: zod
-    .string()
-    .describe(
-      "Title in Brazilian Portuguese (falls back to original title when no translation exists)",
-    ),
-  originalTitle: zod
-    .string()
-    .describe("Original title in the movie's source language"),
-  year: zod.number().nullable().describe("Release year"),
-  rating: zod.number().nullable().describe("TMDB average vote (0-10)"),
-  posterUrl: zod
-    .string()
-    .nullable()
-    .describe("Full URL to the movie poster image"),
+  tmdbId: zod.number(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
 });
 export const SearchMoviesResponse = zod.array(SearchMoviesResponseItem);
+
+/**
+ * @summary Get full TMDB movie detail (with synopsis)
+ */
+export const GetMovieDetailParams = zod.object({
+  tmdbId: zod.coerce.number(),
+});
+
+export const GetMovieDetailResponse = zod.object({
+  tmdbId: zod.number(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
+  backdropUrl: zod.string().nullable(),
+  overview: zod
+    .string()
+    .nullable()
+    .describe("Synopsis in Brazilian Portuguese (with English fallback)"),
+  runtime: zod.number().nullable(),
+  genres: zod.array(zod.string()),
+  tagline: zod.string().nullable(),
+});
+
+/**
+ * @summary Get the currently authenticated user
+ */
+export const GetCurrentAuthUserHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const GetCurrentAuthUserResponse = zod.object({
+  user: zod.union([
+    zod.object({
+      id: zod.string(),
+      email: zod.string().email().nullable(),
+      firstName: zod.string().nullable(),
+      lastName: zod.string().nullable(),
+      profileImageUrl: zod.string().nullable(),
+    }),
+    zod.null(),
+  ]),
+});
+
+/**
+ * @summary Start the browser OIDC login flow
+ */
+export const BeginBrowserLoginQueryParams = zod.object({
+  returnTo: zod.coerce.string().optional(),
+});
+
+/**
+ * @summary Complete the browser OIDC login flow
+ */
+export const HandleBrowserLoginCallbackQueryParams = zod.object({
+  code: zod.coerce.string().optional(),
+  state: zod.coerce.string().optional(),
+  iss: zod.coerce.string().url().optional(),
+});
+
+/**
+ * @summary Clear the session and begin OIDC logout
+ */
+export const LogoutBrowserSessionHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+/**
+ * @summary Exchange a mobile OIDC code for a session token
+ */
+
+export const ExchangeMobileAuthorizationCodeBody = zod.object({
+  code: zod.string().min(1),
+  code_verifier: zod.string().min(1),
+  redirect_uri: zod.string().url().min(1),
+  state: zod.string().min(1),
+  nonce: zod.string().min(1).optional(),
+});
+
+export const ExchangeMobileAuthorizationCodeResponse = zod.object({
+  token: zod.string(),
+});
+
+/**
+ * @summary Delete a mobile session token
+ */
+export const LogoutMobileSessionHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const LogoutMobileSessionResponse = zod.object({
+  success: zod.boolean(),
+});
+
+/**
+ * @summary List the authenticated user's saved movies
+ */
+export const ListMyMoviesHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const ListMyMoviesResponseItem = zod.object({
+  id: zod.string(),
+  tmdbId: zod.number().nullable(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
+  status: zod.enum(["want", "watched", "abandoned"]),
+  addedAt: zod.coerce.date(),
+});
+export const ListMyMoviesResponse = zod.array(ListMyMoviesResponseItem);
+
+/**
+ * @summary Add a movie to the user's library
+ */
+export const AddMyMovieHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const AddMyMovieBody = zod.object({
+  tmdbId: zod.number().nullish(),
+  titlePtBr: zod.string().min(1),
+  originalTitle: zod.string(),
+  year: zod.number().nullish(),
+  rating: zod.number().nullish(),
+  posterUrl: zod.string().nullish(),
+  status: zod.enum(["want", "watched", "abandoned"]),
+});
+
+export const AddMyMovieResponse = zod.object({
+  id: zod.string(),
+  tmdbId: zod.number().nullable(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
+  status: zod.enum(["want", "watched", "abandoned"]),
+  addedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Bulk insert/merge user movies (used for sync after login)
+ */
+export const BulkUpsertMyMoviesHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const BulkUpsertMyMoviesBody = zod.object({
+  movies: zod.array(
+    zod.object({
+      tmdbId: zod.number().nullish(),
+      titlePtBr: zod.string().min(1),
+      originalTitle: zod.string(),
+      year: zod.number().nullish(),
+      rating: zod.number().nullish(),
+      posterUrl: zod.string().nullish(),
+      status: zod.enum(["want", "watched", "abandoned"]),
+    }),
+  ),
+});
+
+export const BulkUpsertMyMoviesResponseItem = zod.object({
+  id: zod.string(),
+  tmdbId: zod.number().nullable(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
+  status: zod.enum(["want", "watched", "abandoned"]),
+  addedAt: zod.coerce.date(),
+});
+export const BulkUpsertMyMoviesResponse = zod.array(
+  BulkUpsertMyMoviesResponseItem,
+);
+
+/**
+ * @summary Update the status of a saved movie
+ */
+export const UpdateMyMovieParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const UpdateMyMovieHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const UpdateMyMovieBody = zod.object({
+  status: zod.enum(["want", "watched", "abandoned"]),
+});
+
+export const UpdateMyMovieResponse = zod.object({
+  id: zod.string(),
+  tmdbId: zod.number().nullable(),
+  titlePtBr: zod.string(),
+  originalTitle: zod.string(),
+  year: zod.number().nullable(),
+  rating: zod.number().nullable(),
+  posterUrl: zod.string().nullable(),
+  status: zod.enum(["want", "watched", "abandoned"]),
+  addedAt: zod.coerce.date(),
+});
+
+/**
+ * @summary Remove a movie from the user's library
+ */
+export const DeleteMyMovieParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const DeleteMyMovieHeader = zod.object({
+  Authorization: zod
+    .string()
+    .optional()
+    .describe("Opaque session token — `Bearer <sid>`."),
+});
+
+export const DeleteMyMovieResponse = zod.object({
+  success: zod.boolean(),
+});

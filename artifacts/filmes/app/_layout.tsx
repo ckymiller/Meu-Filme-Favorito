@@ -12,10 +12,16 @@ import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { setBaseUrl } from "@workspace/api-client-react";
+import {
+  setAuthTokenGetter,
+  setBaseUrl,
+} from "@workspace/api-client-react";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { MoviesProvider } from "@/contexts/MoviesContext";
+import { setMovieActionsHandlers } from "@/components/MovieActions";
+import { MoviesProvider, useMovies } from "@/contexts/MoviesContext";
+import { AuthProvider, useAuth } from "@/lib/auth";
+import { PreferencesProvider } from "@/lib/preferences";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -26,17 +32,36 @@ if (process.env.EXPO_PUBLIC_DOMAIN) {
   setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 }
 
+function ApiAuthBridge({ children }: { children: React.ReactNode }) {
+  const { getToken } = useAuth();
+  useEffect(() => {
+    setAuthTokenGetter(() => getToken());
+    return () => setAuthTokenGetter(null);
+  }, [getToken]);
+  return <>{children}</>;
+}
+
+function MovieActionsBridge({ children }: { children: React.ReactNode }) {
+  const { updateStatus, removeMovie } = useMovies();
+  useEffect(() => {
+    setMovieActionsHandlers({ updateStatus, removeMovie });
+  }, [updateStatus, removeMovie]);
+  return <>{children}</>;
+}
+
 function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: "Voltar" }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen
         name="add"
-        options={{
-          presentation: "modal",
-          title: "Adicionar filme",
-        }}
+        options={{ presentation: "modal", title: "Adicionar filme" }}
       />
+      <Stack.Screen
+        name="settings"
+        options={{ presentation: "modal", title: "Configurações" }}
+      />
+      <Stack.Screen name="movie/[id]" options={{ title: "" }} />
     </Stack>
   );
 }
@@ -61,13 +86,21 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <MoviesProvider>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
-          </MoviesProvider>
+          <AuthProvider>
+            <ApiAuthBridge>
+              <PreferencesProvider>
+                <MoviesProvider>
+                  <MovieActionsBridge>
+                    <GestureHandlerRootView>
+                      <KeyboardProvider>
+                        <RootLayoutNav />
+                      </KeyboardProvider>
+                    </GestureHandlerRootView>
+                  </MovieActionsBridge>
+                </MoviesProvider>
+              </PreferencesProvider>
+            </ApiAuthBridge>
+          </AuthProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

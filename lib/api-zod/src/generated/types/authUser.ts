@@ -6,14 +6,14 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MovieSearchResult {
-  tmdbId: number;
-  titlePtBr: string;
-  originalTitle: string;
+export interface AuthUser {
+  id: string;
   /** @nullable */
-  year: number | null;
+  email: string | null;
   /** @nullable */
-  rating: number | null;
+  firstName: string | null;
   /** @nullable */
-  posterUrl: string | null;
+  lastName: string | null;
+  /** @nullable */
+  profileImageUrl: string | null;
 }

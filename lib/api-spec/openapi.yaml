@@ -12,13 +12,16 @@ tags:
     description: Health operations
   - name: movies
     description: Movie search via TMDB
+  - name: Auth
+    description: Browser and mobile authentication endpoints.
+  - name: library
+    description: User's personal movie library (requires authentication)
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -31,7 +34,6 @@ paths:
       operationId: searchMovies
       tags: [movies]
       summary: Search movies on TMDB
-      description: Search the TMDB database for movies matching a query string. Returns titles in Brazilian Portuguese when available, plus the original title.
       parameters:
         - in: query
           name: q
@@ -39,7 +41,6 @@ paths:
           schema:
             type: string
             minLength: 1
-          description: Movie title to search for
       responses:
         "200":
           description: Search results
@@ -61,7 +62,314 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+  /movies/{tmdbId}:
+    get:
+      operationId: getMovieDetail
+      tags: [movies]
+      summary: Get full TMDB movie detail (with synopsis)
+      parameters:
+        - in: path
+          name: tmdbId
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Movie detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MovieDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: Upstream TMDB error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/user:
+    get:
+      tags: [Auth]
+      operationId: getCurrentAuthUser
+      summary: Get the currently authenticated user
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Auth status resolved successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUserEnvelope"
+  /login:
+    get:
+      tags: [Auth]
+      operationId: beginBrowserLogin
+      summary: Start the browser OIDC login flow
+      parameters:
+        - name: returnTo
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the OIDC authorization endpoint.
+  /callback:
+    get:
+      tags: [Auth]
+      operationId: handleBrowserLoginCallback
+      summary: Complete the browser OIDC login flow
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: iss
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uri
+      responses:
+        "302":
+          description: Redirect to the returnTo path on success.
+  /logout:
+    get:
+      tags: [Auth]
+      operationId: logoutBrowserSession
+      summary: Clear the session and begin OIDC logout
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "302":
+          description: Redirect to OIDC provider logout URL.
+  /mobile-auth/token-exchange:
+    post:
+      tags: [Auth]
+      operationId: exchangeMobileAuthorizationCode
+      summary: Exchange a mobile OIDC code for a session token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MobileTokenExchangeRequest"
+      responses:
+        "200":
+          description: Session created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MobileTokenExchangeSuccess"
+        "400":
+          description: Missing or invalid required fields.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: Token did not contain usable claims.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: Token exchange failed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /mobile-auth/logout:
+    post:
+      tags: [Auth]
+      operationId: logoutMobileSession
+      summary: Delete a mobile session token
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+      responses:
+        "200":
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+  /me/movies:
+    get:
+      tags: [library]
+      operationId: listMyMovies
+      summary: List the authenticated user's saved movies
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Movies list.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserMovie"
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    post:
+      tags: [library]
+      operationId: addMyMovie
+      summary: Add a movie to the user's library
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddUserMovieRequest"
+      responses:
+        "200":
+          description: Movie added (or merged when tmdbId already existed).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMovie"
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /me/movies/bulk:
+    post:
+      tags: [library]
+      operationId: bulkUpsertMyMovies
+      summary: Bulk insert/merge user movies (used for sync after login)
+      parameters:
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkUpsertRequest"
+      responses:
+        "200":
+          description: Bulk upsert complete; returns the full library.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserMovie"
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /me/movies/{id}:
+    patch:
+      tags: [library]
+      operationId: updateMyMovie
+      summary: Update the status of a saved movie
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserMovieRequest"
+      responses:
+        "200":
+          description: Updated movie
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserMovie"
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+    delete:
+      tags: [library]
+      operationId: deleteMyMovie
+      summary: Remove a movie from the user's library
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+        - $ref: "#/components/parameters/AuthorizationSessionHeader"
+        - $ref: "#/components/parameters/SessionCookie"
+      responses:
+        "200":
+          description: Deleted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutSuccess"
+        "401":
+          description: Unauthorized.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "404":
+          description: Not found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
+  parameters:
+    AuthorizationSessionHeader:
+      name: Authorization
+      in: header
+      required: false
+      description: Opaque session token — `Bearer <sid>`.
+      schema:
+        type: string
+    SessionCookie:
+      name: sid
+      in: cookie
+      required: false
+      description: Browser session cookie.
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -75,22 +383,16 @@ components:
       properties:
         tmdbId:
           type: integer
-          description: TMDB unique movie id
         titlePtBr:
           type: string
-          description: Title in Brazilian Portuguese (falls back to original title when no translation exists)
         originalTitle:
           type: string
-          description: Original title in the movie's source language
         year:
           type: ["integer", "null"]
-          description: Release year
         rating:
           type: ["number", "null"]
-          description: TMDB average vote (0-10)
         posterUrl:
           type: ["string", "null"]
-          description: Full URL to the movie poster image
       required:
         - tmdbId
         - titlePtBr
@@ -98,6 +400,46 @@ components:
         - year
         - rating
         - posterUrl
+    MovieDetail:
+      type: object
+      properties:
+        tmdbId:
+          type: integer
+        titlePtBr:
+          type: string
+        originalTitle:
+          type: string
+        year:
+          type: ["integer", "null"]
+        rating:
+          type: ["number", "null"]
+        posterUrl:
+          type: ["string", "null"]
+        backdropUrl:
+          type: ["string", "null"]
+        overview:
+          type: ["string", "null"]
+          description: Synopsis in Brazilian Portuguese (with English fallback)
+        runtime:
+          type: ["integer", "null"]
+        genres:
+          type: array
+          items:
+            type: string
+        tagline:
+          type: ["string", "null"]
+      required:
+        - tmdbId
+        - titlePtBr
+        - originalTitle
+        - year
+        - rating
+        - posterUrl
+        - backdropUrl
+        - overview
+        - runtime
+        - genres
+        - tagline
     ErrorResponse:
       type: object
       properties:
@@ -105,3 +447,136 @@ components:
           type: string
       required:
         - error
+    AuthUser:
+      type: object
+      required: [id, email, firstName, lastName, profileImageUrl]
+      properties:
+        id:
+          type: string
+        email:
+          type: [string, "null"]
+          format: email
+        firstName:
+          type: [string, "null"]
+        lastName:
+          type: [string, "null"]
+        profileImageUrl:
+          type: [string, "null"]
+    AuthUserEnvelope:
+      type: object
+      required: [user]
+      properties:
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AuthUser"
+            - type: "null"
+    MobileTokenExchangeRequest:
+      type: object
+      required: [code, code_verifier, redirect_uri, state]
+      properties:
+        code:
+          type: string
+          minLength: 1
+        code_verifier:
+          type: string
+          minLength: 1
+        redirect_uri:
+          type: string
+          minLength: 1
+          format: uri
+        state:
+          type: string
+          minLength: 1
+        nonce:
+          type: string
+          minLength: 1
+    MobileTokenExchangeSuccess:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+    LogoutSuccess:
+      type: object
+      required: [success]
+      properties:
+        success:
+          type: boolean
+          const: true
+    ErrorEnvelope:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+    MovieStatus:
+      type: string
+      enum: [want, watched, abandoned]
+    UserMovie:
+      type: object
+      required:
+        - id
+        - tmdbId
+        - titlePtBr
+        - originalTitle
+        - year
+        - rating
+        - posterUrl
+        - status
+        - addedAt
+      properties:
+        id:
+          type: string
+        tmdbId:
+          type: ["integer", "null"]
+        titlePtBr:
+          type: string
+        originalTitle:
+          type: string
+        year:
+          type: ["integer", "null"]
+        rating:
+          type: ["number", "null"]
+        posterUrl:
+          type: ["string", "null"]
+        status:
+          $ref: "#/components/schemas/MovieStatus"
+        addedAt:
+          type: string
+          format: date-time
+    AddUserMovieRequest:
+      type: object
+      required:
+        - titlePtBr
+        - originalTitle
+        - status
+      properties:
+        tmdbId:
+          type: ["integer", "null"]
+        titlePtBr:
+          type: string
+          minLength: 1
+        originalTitle:
+          type: string
+        year:
+          type: ["integer", "null"]
+        rating:
+          type: ["number", "null"]
+        posterUrl:
+          type: ["string", "null"]
+        status:
+          $ref: "#/components/schemas/MovieStatus"
+    UpdateUserMovieRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          $ref: "#/components/schemas/MovieStatus"
+    BulkUpsertRequest:
+      type: object
+      required: [movies]
+      properties:
+        movies:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddUserMovieRequest"

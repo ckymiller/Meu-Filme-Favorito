@@ -1,22 +1,12 @@
 import { Feather } from "@expo/vector-icons";
 import { Image } from "expo-image";
+import { useRouter } from "expo-router";
 import React from "react";
-import {
-  Alert,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
-import { Movie, MovieStatus, useMovies } from "@/contexts/MoviesContext";
-
-const STATUS_LABELS: Record<MovieStatus, string> = {
-  want: "Quero Ver",
-  watched: "Já Vi",
-  abandoned: "Desisti",
-};
+import { Movie } from "@/contexts/MoviesContext";
+import { showMovieActions } from "@/components/MovieActions";
 
 interface Props {
   movie: Movie;
@@ -24,43 +14,14 @@ interface Props {
 
 export function MovieRow({ movie }: Props) {
   const colors = useColors();
-  const { updateStatus, removeMovie } = useMovies();
+  const router = useRouter();
 
-  const showActions = () => {
-    const otherStatuses: MovieStatus[] = (
-      ["want", "watched", "abandoned"] as MovieStatus[]
-    ).filter((s) => s !== movie.status);
-
-    Alert.alert(
-      movie.titlePtBr,
-      "Escolha uma ação",
-      [
-        ...otherStatuses.map((s) => ({
-          text: `Mover para “${STATUS_LABELS[s]}”`,
-          onPress: () => updateStatus(movie.id, s),
-        })),
-        {
-          text: "Remover",
-          style: "destructive" as const,
-          onPress: () =>
-            Alert.alert("Remover filme?", `“${movie.titlePtBr}” será removido.`, [
-              { text: "Cancelar", style: "cancel" },
-              {
-                text: "Remover",
-                style: "destructive",
-                onPress: () => removeMovie(movie.id),
-              },
-            ]),
-        },
-        { text: "Cancelar", style: "cancel" as const },
-      ],
-      { cancelable: true },
-    );
-  };
+  const goToDetail = () => router.push(`/movie/${movie.id}`);
 
   return (
     <Pressable
-      onPress={showActions}
+      onPress={goToDetail}
+      onLongPress={() => showMovieActions(movie)}
       style={({ pressed }) => [
         styles.row,
         {
@@ -117,7 +78,16 @@ export function MovieRow({ movie }: Props) {
           ) : null}
         </View>
       </View>
-      <Feather name="more-vertical" size={20} color={colors.mutedForeground} />
+      <Pressable
+        onPress={(e) => {
+          e.stopPropagation();
+          showMovieActions(movie);
+        }}
+        hitSlop={12}
+        style={{ padding: 4 }}
+      >
+        <Feather name="more-vertical" size={20} color={colors.mutedForeground} />
+      </Pressable>
     </Pressable>
   );
 }

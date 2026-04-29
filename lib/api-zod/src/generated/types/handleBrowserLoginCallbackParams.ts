@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type SearchMoviesParams = {
-  /**
-   * @minLength 1
-   */
-  q: string;
+export type HandleBrowserLoginCallbackParams = {
+  code?: string;
+  state?: string;
+  iss?: string;
 };

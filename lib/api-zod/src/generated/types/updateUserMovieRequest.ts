@@ -5,10 +5,8 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MovieStatus } from "./movieStatus";
 
-export type SearchMoviesParams = {
-  /**
-   * @minLength 1
-   */
-  q: string;
-};
+export interface UpdateUserMovieRequest {
+  status: MovieStatus;
+}

@@ -1,39 +1,55 @@
 import { BlurView } from "expo-blur";
-import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Tabs } from "expo-router";
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
-import { SymbolView } from "expo-symbols";
+import { Tabs, useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
 import React from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, Pressable, StyleSheet, View, useColorScheme } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
+import { usePreferences } from "@/lib/preferences";
 
-function NativeTabLayout() {
-  return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: "bookmark", selected: "bookmark.fill" }} />
-        <Label>Quero Ver</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="watched">
-        <Icon sf={{ default: "checkmark.circle", selected: "checkmark.circle.fill" }} />
-        <Label>Já Vi</Label>
-      </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="abandoned">
-        <Icon sf={{ default: "xmark.circle", selected: "xmark.circle.fill" }} />
-        <Label>Desisti</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
-  );
-}
-
-function ClassicTabLayout() {
+export default function TabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
+  const router = useRouter();
+  const { viewMode, toggleViewMode } = usePreferences();
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+
+  const headerRight = () => (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingRight: 12 }}>
+      <Pressable
+        onPress={toggleViewMode}
+        hitSlop={10}
+        style={({ pressed }) => ({
+          padding: 8,
+          borderRadius: 999,
+          opacity: pressed ? 0.6 : 1,
+        })}
+        accessibilityLabel={
+          viewMode === "list" ? "Mudar para grade" : "Mudar para lista"
+        }
+      >
+        <Feather
+          name={viewMode === "list" ? "grid" : "list"}
+          size={20}
+          color={colors.foreground}
+        />
+      </Pressable>
+      <Pressable
+        onPress={() => router.push("/settings")}
+        hitSlop={10}
+        style={({ pressed }) => ({
+          padding: 8,
+          borderRadius: 999,
+          opacity: pressed ? 0.6 : 1,
+        })}
+        accessibilityLabel="Configurações"
+      >
+        <Feather name="user" size={20} color={colors.foreground} />
+      </Pressable>
+    </View>
+  );
 
   return (
     <Tabs
@@ -48,6 +64,7 @@ function ClassicTabLayout() {
           fontFamily: "Inter_700Bold",
         },
         headerShadowVisible: false,
+        headerRight,
         tabBarStyle: {
           position: "absolute",
           backgroundColor: isIOS ? "transparent" : colors.background,
@@ -77,45 +94,29 @@ function ClassicTabLayout() {
         name="index"
         options={{
           title: "Quero Ver",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="bookmark" tintColor={color} size={24} />
-            ) : (
-              <Feather name="bookmark" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Feather name="bookmark" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="watched"
         options={{
           title: "Já Vi",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="checkmark.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="check-circle" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Feather name="check-circle" size={22} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="abandoned"
         options={{
           title: "Desisti",
-          tabBarIcon: ({ color }) =>
-            isIOS ? (
-              <SymbolView name="xmark.circle" tintColor={color} size={24} />
-            ) : (
-              <Feather name="x-circle" size={22} color={color} />
-            ),
+          tabBarIcon: ({ color }) => (
+            <Feather name="x-circle" size={22} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
-}
-
-export default function TabLayout() {
-  if (isLiquidGlassAvailable()) {
-    return <NativeTabLayout />;
-  }
-  return <ClassicTabLayout />;
 }

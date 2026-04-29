@@ -6,7 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MovieSearchResult {
+export interface MovieDetail {
   tmdbId: number;
   titlePtBr: string;
   originalTitle: string;
@@ -16,4 +16,16 @@ export interface MovieSearchResult {
   rating: number | null;
   /** @nullable */
   posterUrl: string | null;
+  /** @nullable */
+  backdropUrl: string | null;
+  /**
+   * Synopsis in Brazilian Portuguese (with English fallback)
+   * @nullable
+   */
+  overview: string | null;
+  /** @nullable */
+  runtime: number | null;
+  genres: string[];
+  /** @nullable */
+  tagline: string | null;
 }
