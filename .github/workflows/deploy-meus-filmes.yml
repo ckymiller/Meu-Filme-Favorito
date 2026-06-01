@@ -1,4 +1,4 @@
-name: Deploy Meus Filmes -> GitHub Pages
+name: Deploy Meus Filmes → GitHub Pages
 
 on:
   push:
