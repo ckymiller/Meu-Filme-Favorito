@@ -1,11 +1,11 @@
 name: Deploy Meus Filmes → GitHub Pages
 
 on:
-push:
-  branches: [main]
-  paths:
-    - "meus-filmes-web/**"
-workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "meus-filmes-web/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
