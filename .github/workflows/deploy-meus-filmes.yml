@@ -1,4 +1,4 @@
-name: Deploy Meus Filmes → GitHub Pages
+name: Deploy Meus Filmes -> GitHub Pages
 
 on:
   push:
@@ -16,6 +16,7 @@ concurrency:
   group: pages
   cancel-in-progress: false
 
+# O restante do seu código (jobs:) continua igual abaixo...
 jobs:
   build:
     runs-on: ubuntu-latest
