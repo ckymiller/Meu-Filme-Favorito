@@ -8,6 +8,8 @@ interface Props {
 
 export function MovieGridCard({ movie }: Props) {
   const navigate = useNavigate();
+  const displayRating = movie.userRating ?? movie.rating;
+  const isUserRating = movie.userRating != null;
 
   return (
     <div style={{ position: "relative" }}>
@@ -18,11 +20,11 @@ export function MovieGridCard({ movie }: Props) {
         <div className="movie-grid-poster">
           {movie.posterUrl ? (
             <img src={movie.posterUrl} alt={movie.titlePtBr} loading="lazy" />
-          ) : (
-            "🎬"
-          )}
-          {movie.rating != null && (
-            <span className="rating-badge">⭐ {movie.rating.toFixed(1)}</span>
+          ) : "🎬"}
+          {displayRating != null && (
+            <span className="rating-badge">
+              {isUserRating ? "🌟" : "⭐"} {displayRating.toFixed(1)}
+            </span>
           )}
         </div>
         <span className="movie-grid-title">{movie.titlePtBr}</span>
