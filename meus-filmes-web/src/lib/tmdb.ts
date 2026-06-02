@@ -31,6 +31,11 @@ export interface MovieDetail extends MovieSearchResult {
   backdropUrl: string | null;
 }
 
+export interface Genre {
+  id: number;
+  name: string;
+}
+
 interface TmdbSearchItem {
   id: number;
   title: string;
@@ -50,10 +55,7 @@ interface TmdbDetailResponse extends TmdbSearchItem {
 
 function ensureApiKey(): void {
   if (!apiKey) {
-    throw new TmdbError(
-      "Chave TMDB não configurada. Defina VITE_TMDB_API_KEY.",
-      0,
-    );
+    throw new TmdbError("Chave TMDB não configurada. Defina VITE_TMDB_API_KEY.", 0);
   }
 }
 
@@ -77,11 +79,12 @@ function ratingFrom(v?: number): number | null {
 
 async function tmdbFetch<T>(
   path: string,
-  params: Record<string, string | number>,
+  params: Record<string, string | number> = {},
 ): Promise<T> {
   ensureApiKey();
   const url = new URL(`${TMDB_BASE}${path}`);
   url.searchParams.set("api_key", apiKey);
+  url.searchParams.set("language", "pt-BR");
   for (const [k, v] of Object.entries(params)) {
     url.searchParams.set(k, String(v));
   }
@@ -91,9 +94,7 @@ async function tmdbFetch<T>(
     try {
       const data = (await res.json()) as { status_message?: string };
       if (data?.status_message) message = data.status_message;
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
     throw new TmdbError(message, res.status);
   }
   return (await res.json()) as T;
@@ -115,33 +116,56 @@ export async function searchMovies(query: string): Promise<MovieSearchResult[]> 
   if (trimmed.length < 2) return [];
   const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/search/movie", {
     query: trimmed,
-    language: "pt-BR",
     include_adult: "false",
     page: 1,
   });
   return (data.results ?? []).map(toSearchResult);
 }
 
-export async function getMovieDetail(tmdbId: number): Promise<MovieDetail> {
-  const ptBr = await tmdbFetch<TmdbDetailResponse>(`/movie/${tmdbId}`, {
-    language: "pt-BR",
-  });
+export async function getTrending(): Promise<MovieSearchResult[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/trending/movie/week");
+  return (data.results ?? []).map(toSearchResult);
+}
 
+export async function getPopularMovies(): Promise<MovieSearchResult[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/movie/popular");
+  return (data.results ?? []).map(toSearchResult);
+}
+
+export async function getNowPlaying(): Promise<MovieSearchResult[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/movie/now_playing");
+  return (data.results ?? []).map(toSearchResult);
+}
+
+export async function getTopRated(): Promise<MovieSearchResult[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/movie/top_rated");
+  return (data.results ?? []).map(toSearchResult);
+}
+
+export async function getGenres(): Promise<Genre[]> {
+  const data = await tmdbFetch<{ genres: Genre[] }>("/genre/movie/list");
+  return data.genres ?? [];
+}
+
+export async function discoverByGenre(genreId: number): Promise<MovieSearchResult[]> {
+  const data = await tmdbFetch<{ results: TmdbSearchItem[] }>("/discover/movie", {
+    with_genres: genreId,
+    sort_by: "popularity.desc",
+  });
+  return (data.results ?? []).map(toSearchResult);
+}
+
+export async function getMovieDetail(tmdbId: number): Promise<MovieDetail> {
+  const ptBr = await tmdbFetch<TmdbDetailResponse>(`/movie/${tmdbId}`);
   let overview = ptBr.overview ?? null;
   let tagline = ptBr.tagline ?? null;
-
   if (!overview || !tagline) {
     try {
-      const en = await tmdbFetch<TmdbDetailResponse>(`/movie/${tmdbId}`, {
-        language: "en-US",
-      });
+      const en = await tmdbFetch<TmdbDetailResponse>(`/movie/${tmdbId}`, { language: "en-US" });
       if (!overview) overview = en.overview ?? null;
       if (!tagline) tagline = en.tagline ?? null;
-    } catch {
-      // ignore
-    }
+    } catch { /* ignore */ }
   }
-
   return {
     ...toSearchResult(ptBr),
     overview: overview?.trim() || null,
@@ -158,6 +182,55 @@ export function useSearchMovies(query: string, enabled = true) {
     queryFn: () => searchMovies(query),
     enabled: enabled && query.trim().length >= 2,
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useTrending() {
+  return useQuery({
+    queryKey: ["tmdb", "trending"],
+    queryFn: getTrending,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+export function usePopularMovies() {
+  return useQuery({
+    queryKey: ["tmdb", "popular"],
+    queryFn: getPopularMovies,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+export function useNowPlaying() {
+  return useQuery({
+    queryKey: ["tmdb", "now_playing"],
+    queryFn: getNowPlaying,
+    staleTime: 1000 * 60 * 30,
+  });
+}
+
+export function useTopRated() {
+  return useQuery({
+    queryKey: ["tmdb", "top_rated"],
+    queryFn: getTopRated,
+    staleTime: 1000 * 60 * 60,
+  });
+}
+
+export function useGenres() {
+  return useQuery({
+    queryKey: ["tmdb", "genres"],
+    queryFn: getGenres,
+    staleTime: 1000 * 60 * 60 * 24,
+  });
+}
+
+export function useDiscoverByGenre(genreId: number | null) {
+  return useQuery({
+    queryKey: ["tmdb", "discover", genreId],
+    queryFn: () => discoverByGenre(genreId as number),
+    enabled: genreId != null,
+    staleTime: 1000 * 60 * 30,
   });
 }
 
