@@ -19,9 +19,7 @@ export function MovieRow({ movie }: Props) {
         <div className="movie-poster">
           {movie.posterUrl ? (
             <img src={movie.posterUrl} alt={movie.titlePtBr} loading="lazy" />
-          ) : (
-            "🎬"
-          )}
+          ) : "🎬"}
         </div>
         <div className="movie-info">
           <span className="movie-title">{movie.titlePtBr}</span>
@@ -32,9 +30,13 @@ export function MovieRow({ movie }: Props) {
             {movie.year && <span>{movie.year}</span>}
             {movie.year && movie.rating != null && <span>·</span>}
             {movie.rating != null && (
-              <span className="movie-rating">
-                ⭐ {movie.rating.toFixed(1)}
-              </span>
+              <span className="movie-rating" title="Nota TMDB">⭐ {movie.rating.toFixed(1)}</span>
+            )}
+            {movie.userRating != null && (
+              <>
+                {(movie.rating != null || movie.year) && <span>·</span>}
+                <span className="movie-rating" style={{ color: "#f5c842" }} title="Minha nota">🌟 {movie.userRating.toFixed(1)}</span>
+              </>
             )}
           </div>
         </div>
