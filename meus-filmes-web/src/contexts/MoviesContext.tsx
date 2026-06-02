@@ -18,7 +18,9 @@ import {
 
 export type { Movie, MovieStatus };
 
-type NewMovieInput = Omit<Movie, "id" | "addedAt">;
+type NewMovieInput = Omit<Movie, "id" | "addedAt" | "userRating"> & {
+  userRating?: number | null;
+};
 
 interface MoviesContextValue {
   movies: Movie[];
@@ -27,6 +29,7 @@ interface MoviesContextValue {
   hasTmdbId: (tmdbId: number | null) => boolean;
   addMovie: (input: NewMovieInput) => void;
   updateStatus: (id: string, status: MovieStatus) => void;
+  updateUserRating: (id: string, userRating: number | null) => void;
   removeMovie: (id: string) => void;
 }
 
@@ -42,7 +45,10 @@ export function MoviesProvider({ children }: { children: ReactNode }) {
 
   const addMovie = useCallback(
     (input: NewMovieInput) => {
-      persist([...movies, { ...input, id: makeId(), addedAt: Date.now() }]);
+      persist([
+        ...movies,
+        { userRating: null, ...input, id: makeId(), addedAt: Date.now() },
+      ]);
     },
     [movies, persist],
   );
@@ -50,6 +56,13 @@ export function MoviesProvider({ children }: { children: ReactNode }) {
   const updateStatus = useCallback(
     (id: string, status: MovieStatus) => {
       persist(movies.map((m) => (m.id === id ? { ...m, status } : m)));
+    },
+    [movies, persist],
+  );
+
+  const updateUserRating = useCallback(
+    (id: string, userRating: number | null) => {
+      persist(movies.map((m) => (m.id === id ? { ...m, userRating } : m)));
     },
     [movies, persist],
   );
@@ -79,8 +92,11 @@ export function MoviesProvider({ children }: { children: ReactNode }) {
   );
 
   const value = useMemo<MoviesContextValue>(
-    () => ({ movies, byStatus, findById, hasTmdbId, addMovie, updateStatus, removeMovie }),
-    [movies, byStatus, findById, hasTmdbId, addMovie, updateStatus, removeMovie],
+    () => ({
+      movies, byStatus, findById, hasTmdbId,
+      addMovie, updateStatus, updateUserRating, removeMovie,
+    }),
+    [movies, byStatus, findById, hasTmdbId, addMovie, updateStatus, updateUserRating, removeMovie],
   );
 
   return <MoviesContext.Provider value={value}>{children}</MoviesContext.Provider>;
