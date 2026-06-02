@@ -10,6 +10,7 @@ export interface Movie {
   posterUrl: string | null;
   status: MovieStatus;
   addedAt: number;
+  userRating: number | null;
 }
 
 const MOVIES_KEY = "@meusfilmes/movies/v1";
@@ -24,7 +25,8 @@ export function loadMovies(): Movie[] {
     const raw = localStorage.getItem(MOVIES_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as unknown;
-    return Array.isArray(parsed) ? (parsed as Movie[]) : [];
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as Movie[]).map((m) => ({ ...m, userRating: m.userRating ?? null }));
   } catch {
     return [];
   }
